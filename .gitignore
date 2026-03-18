@@ -10,3 +10,5 @@ __pycache__/
 
 # Credentials
 gdrive-creds.json
+/metrics.json
+/version.json

@@ -1,0 +1,82 @@
+schema: '2.0'
+stages:
+  collect:
+    cmd: python src/collect.py
+    deps:
+    - path: params.yaml
+      hash: md5
+      md5: 2870c19859fb171abc2b9a83706ba68f
+      size: 281
+    - path: src/collect.py
+      hash: md5
+      md5: d01b521ba289bc5f249461ab886daeb2
+      size: 1232
+    outs:
+    - path: data/raw
+      hash: md5
+      md5: 3f2fca34f8fb13f16268f7e6b7c0d8f8.dir
+      size: 298130
+      nfiles: 2
+  preprocess:
+    cmd: python src/preprocess.py
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 3f2fca34f8fb13f16268f7e6b7c0d8f8.dir
+      size: 298130
+      nfiles: 2
+    - path: params.yaml
+      hash: md5
+      md5: 2870c19859fb171abc2b9a83706ba68f
+      size: 281
+    - path: src/preprocess.py
+      hash: md5
+      md5: 594077d156d79b80874743150bd40b93
+      size: 1575
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: fed540a52162186c6f22d2945226a5f6.dir
+      size: 21326848
+      nfiles: 8
+    - path: models/technopark_scaler.pkl
+      hash: md5
+      md5: 8bfa3872b2609884aca6861bf0d25f17
+      size: 722
+    - path: models/thampanoor_scaler.pkl
+      hash: md5
+      md5: 9afc8289c4910b623c5d61728d926ac6
+      size: 722
+  train:
+    cmd: python src/train.py
+    deps:
+    - path: data/processed
+      hash: md5
+      md5: fed540a52162186c6f22d2945226a5f6.dir
+      size: 21326848
+      nfiles: 8
+    - path: params.yaml
+      hash: md5
+      md5: 2870c19859fb171abc2b9a83706ba68f
+      size: 281
+    - path: src/train.py
+      hash: md5
+      md5: 519c84c9dbc4141ef4b2477b432f5dc3
+      size: 2164
+    outs:
+    - path: metrics.json
+      hash: md5
+      md5: e8a64ff0bea2fc74c1de168ec12c5dcd
+      size: 132
+    - path: models/technopark_model.keras
+      hash: md5
+      md5: 32fa287f127d21e1ba01da9bbf90010a
+      size: 263201
+    - path: models/thampanoor_model.keras
+      hash: md5
+      md5: 906bf64f4d4ed7306a91da332e98000e
+      size: 263211
+    - path: version.json
+      hash: md5
+      md5: bec36272a5f9b3a7f25a5c2d60787a30
+      size: 136
