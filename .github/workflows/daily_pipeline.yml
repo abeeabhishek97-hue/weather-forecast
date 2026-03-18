@@ -1,0 +1,52 @@
+name: Daily Retrain & Deploy
+
+on:
+  schedule:
+    - cron: "0 1 * * *"
+  workflow_dispatch:
+
+jobs:
+  retrain:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Configure DVC remote (Google Drive)
+        env:
+          GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
+        run: |
+          echo "$GDRIVE_CREDENTIALS_DATA" > gdrive-creds.json
+          dvc remote modify myremote gdrive_use_service_account true
+          dvc remote modify myremote gdrive_service_account_json_file_path gdrive-creds.json
+
+      - name: Pull DVC data & models
+        run: dvc pull
+
+      - name: Run pipeline
+        run: dvc repro
+
+      - name: Push new artifacts to DVC remote
+        run: dvc push
+
+      - name: Commit metadata back to repo
+        env:
+          GIT_TOKEN: ${{ secrets.GIT_TOKEN }}
+        run: |
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git remote set-url origin https://x-access-token:${GIT_TOKEN}@github.com/${{ github.repository }}
+          git add dvc.lock metrics.json version.json
+          git commit -m "chore: retrain $(date -u +'%Y-%m-%d')" || echo "Nothing to commit"
+          git push

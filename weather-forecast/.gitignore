@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.pyc
+.env
+
+# DVC
+/data/raw
+/data/processed
+/models
+
+# Credentials
+gdrive-creds.json

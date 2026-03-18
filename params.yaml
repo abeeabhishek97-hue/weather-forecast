@@ -1,0 +1,19 @@
+data:
+  history_months: 6
+  locations:
+    technopark:
+      lat: 8.5574
+      lon: 76.8800
+    thampanoor:
+      lat: 8.4875
+      lon: 76.9525
+
+model:
+  lstm_units: 64
+  dropout: 0.2
+  lookback: 48
+  horizon: 24
+  epochs: 30
+  patience: 5
+  batch_size: 32
+  learning_rate: 0.001

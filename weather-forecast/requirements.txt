@@ -1,0 +1,9 @@
+dvc[gdrive]
+tensorflow
+scikit-learn
+pandas
+numpy
+requests
+streamlit
+plotly
+pyyaml
