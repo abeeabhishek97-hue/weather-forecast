@@ -1,5 +1,4 @@
-dvc[gdrive]
-tensorflow
+tensorflow-cpu
 scikit-learn
 pandas
 numpy
@@ -7,3 +6,4 @@ requests
 streamlit
 plotly
 pyyaml
+dvc
