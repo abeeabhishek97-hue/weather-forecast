@@ -1,10 +1,8 @@
 import streamlit as st
 import json
-import pickle
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import requests
 from datetime import datetime, timedelta
 
 st.set_page_config(page_title="Weather Forecast", page_icon="🌦️")
@@ -16,74 +14,22 @@ st.caption(f"Model v{v['version']} | Trained: {v['trained_on']} | "
 
 st.title("🌦️ Weather Forecast — Thiruvananthapuram")
 
+cache = json.load(open("forecast_cache.json"))
+
 LOCATIONS = {
-    "Technopark": {"lat": 8.5574, "lon": 76.8800, "key": "technopark"},
-    "Thampanoor": {"lat": 8.4875, "lon": 76.9525, "key": "thampanoor"},
+    "Technopark": "technopark",
+    "Thampanoor": "thampanoor",
 }
-
-@st.cache_resource
-def load_model(key):
-    try:
-        import tensorflow as tf
-        return tf.keras.models.load_model(f"models/{key}_model.keras")
-    except Exception:
-        try:
-            import keras
-            return keras.models.load_model(f"models/{key}_model.keras")
-        except Exception as e:
-            st.error(f"Could not load model: {e}")
-            return None
-
-def fetch_recent(lat, lon):
-    end = datetime.utcnow().date()
-    start = end - timedelta(days=4)
-    url = "https://api.open-meteo.com/v1/forecast"
-    r = requests.get(url, params={
-        "latitude": lat, "longitude": lon,
-        "hourly": "temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m",
-        "start_date": str(start), "end_date": str(end),
-        "timezone": "Asia/Kolkata",
-    })
-    data = r.json()["hourly"]
-    df = pd.DataFrame(data).rename(columns={"time": "datetime"})
-    df["datetime"] = pd.to_datetime(df["datetime"])
-    return df.tail(72)
-
-def make_forecast(df, key):
-    scaler = pickle.load(open(f"models/{key}_scaler.pkl", "rb"))
-    model = load_model(key)
-    if model is None:
-        return None
-
-    df = df.copy()
-    df["hour"] = df["datetime"].dt.hour
-    df["dayofweek"] = df["datetime"].dt.dayofweek
-    features = ["temperature_2m","relative_humidity_2m","precipitation","wind_speed_10m","hour","dayofweek"]
-
-    scaled = scaler.transform(df[features].values)
-    X = scaled[-48:].reshape(1, 48, len(features))
-    pred_scaled = model.predict(X, verbose=0)[0]
-
-    dummy = np.zeros((24, len(features)))
-    dummy[:, 0] = pred_scaled
-    pred_temp = scaler.inverse_transform(dummy)[:, 0]
-    return pred_temp
 
 tabs = st.tabs(list(LOCATIONS.keys()))
 
-for tab, (loc_name, info) in zip(tabs, LOCATIONS.items()):
+for tab, (loc_name, key) in zip(tabs, LOCATIONS.items()):
     with tab:
-        with st.spinner("Loading data..."):
-            df = fetch_recent(info["lat"], info["lon"])
-            forecast = make_forecast(df, info["key"])
-
-        if forecast is None:
-            st.error("Model could not be loaded.")
-            continue
-
-        actuals = df["temperature_2m"].values[-48:]
-        actual_times = df["datetime"].values[-48:]
-        last_time = pd.to_datetime(actual_times[-1])
+        data = cache[key]
+        actuals = data["actuals"]
+        actual_times = pd.to_datetime(data["times"])
+        forecast = data["forecast"]
+        last_time = actual_times[-1]
         forecast_times = [last_time + timedelta(hours=i+1) for i in range(24)]
 
         fig = go.Figure()
@@ -93,6 +39,6 @@ for tab, (loc_name, info) in zip(tabs, LOCATIONS.items()):
         st.plotly_chart(fig, use_container_width=True)
 
         col1, col2, col3 = st.columns(3)
-        col1.metric("Min Forecast", f"{forecast.min():.1f}°C")
-        col2.metric("Max Forecast", f"{forecast.max():.1f}°C")
-        col3.metric("Avg Humidity", f"{df['relative_humidity_2m'].mean():.0f}%")
+        col1.metric("Min Forecast", f"{min(forecast):.1f}°C")
+        col2.metric("Max Forecast", f"{max(forecast):.1f}°C")
+        col3.metric("Avg Humidity", f"{data['humidity']:.0f}%")
